@@ -77,8 +77,8 @@ export async function finalizeRent(req, res){
         const game = await db.query(`SELECT * FROM games WHERE id = $1`, [rental.rows[0].gameId])
 
 
-        const d = Math.round((new Date(dayjs().format("YYYY-MM-DD")) - new Date(rental.rows[0].rentDate)) / (1000 * 60 * 60 * 24)) - rental.rows[0].daysRented
-        
+        let d = Math.round((new Date(dayjs().format("YYYY-MM-DD")) - new Date(rental.rows[0].rentDate)) / (1000 * 60 * 60 * 24)) - rental.rows[0].daysRented
+        if(d < 0) d = 0
         await db.query(`UPDATE rentals SET "returnDate" = $1, "delayFee" = $2 WHERE id = $3`,
         [dayjs().format("YYYY-MM-DD"), (d * game.rows[0].pricePerDay), id])
 
@@ -100,7 +100,7 @@ export async function deleteRental(req, res){
         await db.query(`DELETE FROM rentals WHERE id = $1`, [id])
 
         res.sendStatus(200)
-        
+
     }catch(err){
         res.status(500).send(err.message)
     } 
