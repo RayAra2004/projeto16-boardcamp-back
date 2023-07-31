@@ -2,28 +2,54 @@ import dayjs from "dayjs";
 import { db } from "../database/database.connection.js";
 
 export async function getRentals(req, res){
-    const rentals = await db.query(
-        `SELECT rentals.*, customers.id as "customerId", customers."name" as "customerName", games.id as "gameId", games."name" as "gameName" 
-        FROM rentals
-        INNER JOIN customers ON customers.id = rentals."customerId"
-        INNER JOIN games ON games.id = rentals."gameId"`
-    )
-
-    const resposta = rentals.rows.map( r => {
-        const customer  = {id: r.customerId, name: r.customerName}
-        const game = {id: r.gameId, name: r.gameName}
-
-        const rentDate = dayjs(r.rentDate).format('YYYY-MM-DD')
-
-        delete r.customerName
-        delete r.gameName
-
-        return {
-            ...r, customer, game, rentDate
+    const {customerId, gameId} = req.query
+    let rentals;
+    try{
+        if(customerId){
+            rentals = await db.query(
+                `SELECT rentals.*, customers.id as "customerId", customers."name" as "customerName", games.id as "gameId", games."name" as "gameName" 
+                FROM rentals
+                INNER JOIN customers ON customers.id = rentals."customerId"
+                INNER JOIN games ON games.id = rentals."gameId"
+                WHERE customers.id = $1`, [customerId]
+            )
+        }else if(gameId){
+            rentals = await db.query(
+                `SELECT rentals.*, customers.id as "customerId", customers."name" as "customerName", games.id as "gameId", games."name" as "gameName" 
+                FROM rentals
+                INNER JOIN customers ON customers.id = rentals."customerId"
+                INNER JOIN games ON games.id = rentals."gameId"
+                WHERE games.id = $1`, [gameId]
+            )
+        }else{
+            rentals = await db.query(
+                `SELECT rentals.*, customers.id as "customerId", customers."name" as "customerName", games.id as "gameId", games."name" as "gameName" 
+                FROM rentals
+                INNER JOIN customers ON customers.id = rentals."customerId"
+                INNER JOIN games ON games.id = rentals."gameId"`
+            )
         }
-    })
-
-    res.send(resposta)
+        
+    
+        const resposta = rentals.rows.map( r => {
+            const customer  = {id: r.customerId, name: r.customerName}
+            const game = {id: r.gameId, name: r.gameName}
+    
+            const rentDate = dayjs(r.rentDate).format('YYYY-MM-DD')
+    
+            delete r.customerName
+            delete r.gameName
+    
+            return {
+                ...r, customer, game, rentDate
+            }
+        })
+    
+        res.send(resposta)
+    }catch(err){
+        res.status(500).send(err.message)
+    }
+    
 }
 
 export async function postRentals(req, res){

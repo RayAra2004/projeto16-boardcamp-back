@@ -3,8 +3,16 @@ import dayjs from "dayjs";
 
 
 export async function getCustomers(req, res){
+    const { cpf } = req.query
+
     try{
-        const customers = await db.query("SELECT * FROM customers;");
+        let customers 
+        if(cpf){
+            customers = await db.query(`SELECT * FROM customers WHERE customers.cpf LIKE '${cpf}%';`);  
+        }else{
+            customers = await db.query("SELECT * FROM customers;");
+        }
+            
         const t = customers.rows.map(c => {
             const b = dayjs(c.birthday).format('YYYY-MM-DD')
             delete c.birthday
